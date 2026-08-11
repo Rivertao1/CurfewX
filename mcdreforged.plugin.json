@@ -1,0 +1,20 @@
+{
+  "id": "curfew_x",
+  "version": "0.1.0",
+  "name": "CurfewX",
+  "description": {
+    "en_us": "Keep a Minecraft server offline during configurable curfew hours",
+    "zh_cn": "在指定宵禁时段自动关闭 Minecraft 服务端"
+  },
+  "author": "River_tao",
+  "link": "https://github.com/Rivertao1/CurfewX",
+  "dependencies": {
+    "mcdreforged": ">=2.15.7 <3.0.0"
+  },
+  "archive_name": "CurfewX-v{version}",
+  "resources": [
+    "README.md",
+    "README_en_us.md",
+    "LICENSE"
+  ]
+}

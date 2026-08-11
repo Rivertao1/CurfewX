@@ -1,0 +1,1 @@
+# CurfewX has no third-party runtime dependencies.
