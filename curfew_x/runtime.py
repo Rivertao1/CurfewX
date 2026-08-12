@@ -53,7 +53,10 @@ class CurfewRuntime:
             self._register_commands()
             self.server.register_help_message(
                 "!!curfew",
-                "CurfewX 宵禁管理",
+                {
+                    "zh_cn": "管理服务器宵禁时间与临时解除",
+                    "en_us": "Manage server curfew schedules and temporary pardons",
+                },
                 permission=ADMIN_PERMISSION_LEVEL,
             )
             self._thread = threading.Thread(

@@ -43,9 +43,20 @@ class FakeServer:
         self.kill_calls = 0
         self.exit_flags: list[bool] = []
         self.messages: list[str] = []
+        self.help_messages: list[tuple[str, object, int]] = []
+        self.commands: list[object] = []
 
     def get_data_folder(self) -> str:
         return str(self.data_folder)
+
+    def load_config_simple(self, **kwargs: object) -> object:
+        return kwargs["default_config"]
+
+    def register_help_message(self, prefix: str, message: object, permission: int) -> None:
+        self.help_messages.append((prefix, message, permission))
+
+    def register_command(self, command: object) -> None:
+        self.commands.append(command)
 
     def is_server_running(self) -> bool:
         return self.running
@@ -204,3 +215,21 @@ def test_help_lists_all_admin_commands(tmp_path: Path) -> None:
     ):
         assert command in reply
     assert "admin（等级 3）" in reply
+
+
+def test_load_registers_bilingual_mcdr_help_entry(tmp_path: Path) -> None:
+    runtime, server = make_runtime(tmp_path)
+
+    runtime.load()
+    runtime.unload()
+
+    assert server.help_messages == [
+        (
+            "!!curfew",
+            {
+                "zh_cn": "管理服务器宵禁时间与临时解除",
+                "en_us": "Manage server curfew schedules and temporary pardons",
+            },
+            3,
+        )
+    ]
