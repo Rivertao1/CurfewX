@@ -144,6 +144,7 @@ class CurfewRuntime:
             .requires(Requirements.has_permission(ADMIN_PERMISSION_LEVEL), failure)
             .runs(self._command_status)
         )
+        root.then(Literal("help").runs(self._command_help))
         root.then(Literal("status").runs(self._command_status))
         root.then(Literal("enable").runs(self._command_enable))
         root.then(Literal("disable").runs(self._command_disable))
@@ -154,6 +155,25 @@ class CurfewRuntime:
             .then(Literal("cancel").runs(self._command_pardon_cancel))
         )
         self.server.register_command(root)
+
+    def _command_help(
+        self, source: CommandSource, _context: dict[str, Any] | None = None
+    ) -> None:
+        source.reply(
+            "\n".join(
+                (
+                    "§6[CurfewX] 命令帮助",
+                    "§e!!curfew help§7 - 显示本帮助",
+                    "§e!!curfew status§7 - 查看宵禁、服务器和临时解除状态",
+                    "§e!!curfew pardon <分钟>§7 - 临时解除宵禁并按需启动服务器",
+                    "§e!!curfew pardon cancel§7 - 取消临时解除",
+                    "§e!!curfew enable§7 - 启用宵禁调度",
+                    "§e!!curfew disable§7 - 禁用调度并恢复插件关闭的服务器",
+                    "§e!!curfew reload§7 - 验证并重载配置文件",
+                    "§7所有命令需要 MCDR admin（等级 3）或更高权限。",
+                )
+            )
+        )
 
     def _command_status(
         self, source: CommandSource, _context: dict[str, Any] | None = None

@@ -1,6 +1,6 @@
 {
   "id": "curfew_x",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "name": "CurfewX",
   "description": {
     "en_us": "Keep a Minecraft server offline during configurable curfew hours",

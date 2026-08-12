@@ -8,7 +8,7 @@ CurfewX targets MCDReforged 2.15.7 and uses only public MCDR server-control APIs
 
 ## Installation
 
-1. Download `CurfewX-v0.1.0.mcdr` from GitHub Releases.
+1. Download the latest `CurfewX-v*.mcdr` from GitHub Releases.
 2. Put it in the MCDR `plugins/` directory.
 3. Run `!!MCDR reload plugin`, or restart MCDR.
 4. On first load, CurfewX creates `config/curfew_x/config.yml` and `config/curfew_x/state.json`.
@@ -81,6 +81,7 @@ Every command requires MCDR `admin` permission level 3 or higher. The MCDR conso
 | Command | Description |
 | --- | --- |
 | `!!curfew` / `!!curfew status` | Show scheduler, server, and pardon status |
+| `!!curfew help` | Show the plugin command reference |
 | `!!curfew pardon <minutes>` | Temporarily suspend curfew and start the server if needed |
 | `!!curfew pardon cancel` | Cancel a pardon; during curfew, stop after a 10-second countdown |
 | `!!curfew enable` | Enable scheduling; during curfew, stop after a 10-second countdown |
@@ -114,4 +115,3 @@ uv run mcdreforged pack -o dist
 ## License
 
 CurfewX is released under the [MIT License](LICENSE).
-

@@ -76,6 +76,14 @@ class FakeServer:
         return self.running
 
 
+class FakeSource:
+    def __init__(self) -> None:
+        self.replies: list[str] = []
+
+    def reply(self, message: str) -> None:
+        self.replies.append(message)
+
+
 def at(hour: int, minute: int = 0, second: int = 0) -> datetime:
     return datetime(2026, 8, 11, hour, minute, second, tzinfo=SHANGHAI)
 
@@ -175,3 +183,24 @@ def test_disable_allows_managed_server_to_start(tmp_path: Path) -> None:
 
     assert server.start_calls == 1
     assert not runtime._state.managed_shutdown
+
+
+def test_help_lists_all_admin_commands(tmp_path: Path) -> None:
+    runtime, _server = make_runtime(tmp_path)
+    source = FakeSource()
+
+    runtime._command_help(source, {})  # type: ignore[arg-type]
+
+    assert len(source.replies) == 1
+    reply = source.replies[0]
+    for command in (
+        "!!curfew help",
+        "!!curfew status",
+        "!!curfew pardon <分钟>",
+        "!!curfew pardon cancel",
+        "!!curfew enable",
+        "!!curfew disable",
+        "!!curfew reload",
+    ):
+        assert command in reply
+    assert "admin（等级 3）" in reply

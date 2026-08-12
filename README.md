@@ -8,7 +8,7 @@ CurfewX 是一个适用于 MCDReforged 的关服型宵禁插件。它会在配�
 
 ## 安装
 
-1. 从 `dist/` 获取 `CurfewX-v0.1.0.mcdr`。
+1. 从 GitHub Releases 下载最新的 `CurfewX-v*.mcdr`。
 2. 将文件放入 MCDR 的 `plugins/` 目录。
 3. 执行 `!!MCDR reload plugin`，或重新启动 MCDR。
 4. 首次加载后，插件会生成 `config/curfew_x/config.yml` 和 `config/curfew_x/state.json`。
@@ -81,6 +81,7 @@ schedule:
 | 命令 | 作用 |
 | --- | --- |
 | `!!curfew` / `!!curfew status` | 显示调度、服务器和临时解除状态 |
+| `!!curfew help` | 显示插件命令帮助 |
 | `!!curfew pardon <分钟>` | 临时解除宵禁；需要时立即启动服务器 |
 | `!!curfew pardon cancel` | 取消临时解除；若正值宵禁，执行 10 秒倒计时后关服 |
 | `!!curfew enable` | 启用调度；若正值宵禁，执行 10 秒倒计时后关服 |
