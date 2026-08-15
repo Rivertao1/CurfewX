@@ -55,7 +55,14 @@ messages:
   minutes_remaining: "距离服务器宵禁还有 {value} 分钟"
   seconds_remaining: "距离服务器宵禁还有 {value} 秒"
   shutdown_now: "宵禁开始，服务器正在关闭"
+  colors:
+    prefix: green
+    countdown_text: yellow
+    countdown_value: red
+    shutdown_text: red
 ```
+
+In-game broadcasts use MCDR structured text, so the prefix, countdown text, countdown value, and shutdown text can be colored independently. A color may be a standard Minecraft color name such as `green`, `yellow`, `red`, or `gold`, or a hexadecimal RGB value such as `#55FF55`. Countdown templates must keep the `{value}` placeholder, which uses the `countdown_value` color.
 
 Schedules may also be configured per weekday, with multiple intervals per day and intervals that cross midnight:
 
@@ -72,7 +79,7 @@ schedule:
 
 Supported weekday keys are `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `saturday`, and `sunday`. Intervals under `every_day` apply to every day and are merged with weekday-specific intervals. Remove `every_day` when every weekday should use independent rules.
 
-Run `!!curfew reload` after editing the configuration. If validation fails, CurfewX keeps the currently active valid configuration and reports the error in both the command response and MCDR log.
+Run `!!cfx reload` after editing the configuration. If validation fails, CurfewX keeps the currently active valid configuration and reports the error in both the command response and MCDR log.
 
 ## Commands and permissions
 
@@ -80,13 +87,15 @@ Every command requires MCDR `admin` permission level 3 or higher. The MCDR conso
 
 | Command | Description |
 | --- | --- |
-| `!!curfew` / `!!curfew status` | Show scheduler, server, and pardon status |
-| `!!curfew help` | Show the plugin command reference |
-| `!!curfew pardon <minutes>` | Temporarily suspend curfew and start the server if needed |
-| `!!curfew pardon cancel` | Cancel a pardon; during curfew, stop after a 10-second countdown |
-| `!!curfew enable` | Enable scheduling; during curfew, stop after a 10-second countdown |
-| `!!curfew disable` | Disable scheduling and start a server stopped by CurfewX |
-| `!!curfew reload` | Validate and reload the configuration |
+| `!!cfx` / `!!cfx status` | Show scheduler, server, and pardon status |
+| `!!cfx help` | Show the plugin command reference |
+| `!!cfx pardon <minutes>` | Temporarily suspend curfew and start the server if needed |
+| `!!cfx pardon cancel` | Cancel a pardon; during curfew, stop after a 10-second countdown |
+| `!!cfx enable` | Enable scheduling; during curfew, stop after a 10-second countdown |
+| `!!cfx disable` | Disable scheduling and start a server stopped by CurfewX |
+| `!!cfx reload` | Validate and reload the configuration |
+
+`!!curfew` is the full command alias and supports the same subcommands as `!!cfx`.
 
 Pardon expiration is persisted. If the configured curfew is still active when a pardon expires, the server is stopped. Otherwise, it remains online.
 

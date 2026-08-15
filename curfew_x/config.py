@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from string import Formatter
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from mcdreforged.api.rtext import RColor, RText, RTextBase, RTextList
 
 from curfew_x.schedule import ScheduleError, WeeklySchedule
 
@@ -24,12 +27,28 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "minutes_remaining": "距离服务器宵禁还有 {value} 分钟",
         "seconds_remaining": "距离服务器宵禁还有 {value} 秒",
         "shutdown_now": "宵禁开始，服务器正在关闭",
+        "colors": {
+            "prefix": "green",
+            "countdown_text": "yellow",
+            "countdown_value": "red",
+            "shutdown_text": "red",
+        },
     },
 }
+
+_FORMATTER = Formatter()
 
 
 class ConfigError(ValueError):
     """Raised when the user configuration is invalid."""
+
+
+@dataclass(frozen=True)
+class MessageColors:
+    prefix: RColor
+    countdown_text: RColor
+    countdown_value: RColor
+    shutdown_text: RColor
 
 
 @dataclass(frozen=True)
@@ -38,13 +57,49 @@ class MessageConfig:
     minutes_remaining: str
     seconds_remaining: str
     shutdown_now: str
+    colors: MessageColors
 
-    def render(self, template: str, **values: object) -> str:
+    def render_countdown(self, template: str, *, value: int) -> RTextBase:
+        components = self._prefix_components()
+        found_value = False
         try:
-            content = template.format(**values)
+            for literal, field_name, format_spec, conversion in _FORMATTER.parse(template):
+                if literal:
+                    components.append(RText(literal, self.colors.countdown_text))
+                if field_name is None:
+                    continue
+                if field_name != "value":
+                    raise KeyError(field_name)
+                found_value = True
+                rendered: object = value
+                if conversion is not None:
+                    rendered = _FORMATTER.convert_field(rendered, conversion)
+                components.append(
+                    RText(
+                        _FORMATTER.format_field(rendered, format_spec),
+                        self.colors.countdown_value,
+                    )
+                )
         except (KeyError, ValueError) as exc:
             raise ConfigError(f"消息模板格式错误: {exc}") from exc
-        return f"{self.prefix} {content}" if self.prefix else content
+        if not found_value:
+            raise ConfigError("倒计时消息模板必须包含 {value}")
+        return RTextList(*components)
+
+    def render_shutdown(self) -> RTextBase:
+        try:
+            content = self.shutdown_now.format()
+        except (KeyError, ValueError) as exc:
+            raise ConfigError(f"消息模板格式错误: {exc}") from exc
+        return RTextList(
+            *self._prefix_components(),
+            RText(content, self.colors.shutdown_text),
+        )
+
+    def _prefix_components(self) -> list[object]:
+        if not self.prefix:
+            return []
+        return [RText(self.prefix, self.colors.prefix), " "]
 
 
 @dataclass(frozen=True)
@@ -93,16 +148,23 @@ class CurfewConfig:
             raise ConfigError("force_kill_after_seconds 必须大于 warning_after_seconds")
 
         messages = _mapping(raw, "messages")
+        colors = _mapping(messages, "colors")
         message_config = MessageConfig(
             prefix=_string(messages, "prefix"),
             minutes_remaining=_string(messages, "minutes_remaining"),
             seconds_remaining=_string(messages, "seconds_remaining"),
             shutdown_now=_string(messages, "shutdown_now"),
+            colors=MessageColors(
+                prefix=_color(colors, "prefix"),
+                countdown_text=_color(colors, "countdown_text"),
+                countdown_value=_color(colors, "countdown_value"),
+                shutdown_text=_color(colors, "shutdown_text"),
+            ),
         )
         # Validate placeholders while loading rather than during the final countdown.
-        message_config.render(message_config.minutes_remaining, value=1)
-        message_config.render(message_config.seconds_remaining, value=1)
-        message_config.render(message_config.shutdown_now)
+        message_config.render_countdown(message_config.minutes_remaining, value=1)
+        message_config.render_countdown(message_config.seconds_remaining, value=1)
+        message_config.render_shutdown()
 
         return cls(
             timezone_name=timezone_name,
@@ -137,6 +199,14 @@ def _positive_integer(raw: Mapping[str, Any], key: str) -> int:
     return value
 
 
+def _color(raw: Mapping[str, Any], key: str) -> RColor:
+    value = _string(raw, key)
+    try:
+        return RColor.from_mc_value(value)
+    except ValueError as exc:
+        raise ConfigError(f"{key} 不是有效的 Minecraft 颜色: {value}") from exc
+
+
 def _integer_list(raw: Mapping[str, Any], key: str) -> Sequence[int]:
     value = raw.get(key)
     if not isinstance(value, list) or any(
@@ -144,4 +214,3 @@ def _integer_list(raw: Mapping[str, Any], key: str) -> Sequence[int]:
     ):
         raise ConfigError(f"{key} 必须是整数列表")
     return value
-

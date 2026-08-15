@@ -42,7 +42,7 @@ class FakeServer:
         self.start_calls = 0
         self.kill_calls = 0
         self.exit_flags: list[bool] = []
-        self.messages: list[str] = []
+        self.messages: list[object] = []
         self.help_messages: list[tuple[str, object, int]] = []
         self.commands: list[object] = []
 
@@ -64,7 +64,7 @@ class FakeServer:
     def is_server_startup(self) -> bool:
         return self.startup
 
-    def say(self, message: str) -> None:
+    def say(self, message: object) -> None:
         self.messages.append(message)
 
     def set_exit_after_stop_flag(self, value: bool) -> None:
@@ -106,6 +106,13 @@ def make_runtime(tmp_path: Path) -> tuple[CurfewRuntime, FakeServer]:
     return runtime, server
 
 
+def plain_messages(server: FakeServer) -> list[str]:
+    return [
+        message.to_plain_text() if hasattr(message, "to_plain_text") else str(message)
+        for message in server.messages
+    ]
+
+
 def test_reminders_and_shutdown_are_emitted_once(tmp_path: Path) -> None:
     runtime, server = make_runtime(tmp_path)
 
@@ -117,11 +124,12 @@ def test_reminders_and_shutdown_are_emitted_once(tmp_path: Path) -> None:
     runtime.tick(at(0, 0) + timedelta(days=1))
     runtime.tick(at(0, 0, 1) + timedelta(days=1))
 
-    assert "[CurfewX] 距离服务器宵禁还有 60 分钟" in server.messages
-    assert "[CurfewX] 距离服务器宵禁还有 30 分钟" in server.messages
-    assert "[CurfewX] 距离服务器宵禁还有 30 秒" in server.messages
-    assert "[CurfewX] 距离服务器宵禁还有 1 秒" in server.messages
-    assert server.messages[-1] == "[CurfewX] 宵禁开始，服务器正在关闭"
+    messages = plain_messages(server)
+    assert "[CurfewX] 距离服务器宵禁还有 60 分钟" in messages
+    assert "[CurfewX] 距离服务器宵禁还有 30 分钟" in messages
+    assert "[CurfewX] 距离服务器宵禁还有 30 秒" in messages
+    assert "[CurfewX] 距离服务器宵禁还有 1 秒" in messages
+    assert messages[-1] == "[CurfewX] 宵禁开始，服务器正在关闭"
     assert server.stop_calls == 1
     assert server.exit_flags == [False]
     assert runtime._state.managed_shutdown
@@ -177,7 +185,7 @@ def test_pardon_delays_shutdown_until_expiry(tmp_path: Path) -> None:
     runtime.tick(now)
     runtime.tick(now + timedelta(minutes=59, seconds=50))
     assert server.stop_calls == 0
-    assert "[CurfewX] 距离服务器宵禁还有 10 秒" in server.messages
+    assert "[CurfewX] 距离服务器宵禁还有 10 秒" in plain_messages(server)
 
     runtime.tick(now + timedelta(minutes=60))
     assert server.stop_calls == 1
@@ -205,15 +213,16 @@ def test_help_lists_all_admin_commands(tmp_path: Path) -> None:
     assert len(source.replies) == 1
     reply = source.replies[0]
     for command in (
-        "!!curfew help",
-        "!!curfew status",
-        "!!curfew pardon <分钟>",
-        "!!curfew pardon cancel",
-        "!!curfew enable",
-        "!!curfew disable",
-        "!!curfew reload",
+        "!!cfx help",
+        "!!cfx status",
+        "!!cfx pardon <分钟>",
+        "!!cfx pardon cancel",
+        "!!cfx enable",
+        "!!cfx disable",
+        "!!cfx reload",
     ):
         assert command in reply
+    assert "完整命令别名：§e!!curfew" in reply
     assert "admin（等级 3）" in reply
 
 
@@ -225,11 +234,12 @@ def test_load_registers_bilingual_mcdr_help_entry(tmp_path: Path) -> None:
 
     assert server.help_messages == [
         (
-            "!!curfew",
+            "!!cfx",
             {
-                "zh_cn": "管理服务器宵禁时间与临时解除",
-                "en_us": "Manage server curfew schedules and temporary pardons",
+                "zh_cn": "管理服务器宵禁时间与临时解除（完整别名：!!curfew）",
+                "en_us": "Manage server curfews and pardons (full alias: !!curfew)",
             },
             3,
         )
     ]
+    assert len(server.commands) == 2

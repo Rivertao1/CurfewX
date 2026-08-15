@@ -55,7 +55,14 @@ messages:
   minutes_remaining: "距离服务器宵禁还有 {value} 分钟"
   seconds_remaining: "距离服务器宵禁还有 {value} 秒"
   shutdown_now: "宵禁开始，服务器正在关闭"
+  colors:
+    prefix: green
+    countdown_text: yellow
+    countdown_value: red
+    shutdown_text: red
 ```
+
+游戏内广播使用 MCDR 的结构化文本：前缀、倒计时正文、时间数字和关服正文可以分别配色。颜色值可填写 Minecraft 标准颜色名（如 `green`、`yellow`、`red`、`gold`）或十六进制 RGB（如 `#55FF55`）。倒计时模板必须保留 `{value}`，该部分会单独使用 `countdown_value` 的颜色。
 
 `schedule` 还支持按星期配置，并支持一天内多个区间和跨零点：
 
@@ -72,7 +79,7 @@ schedule:
 
 可用的星期键为 `monday`、`tuesday`、`wednesday`、`thursday`、`friday`、`saturday`、`sunday`。`every_day` 中的区间会应用到每天，并与具体星期下的区间合并；如果需要每天采用不同规则，请移除 `every_day`。
 
-修改配置后执行 `!!curfew reload`。配置错误时，插件会保留当前正在使用的有效配置，并在命令回复和 MCDR 日志中报告错误。
+修改配置后执行 `!!cfx reload`。配置错误时，插件会保留当前正在使用的有效配置，并在命令回复和 MCDR 日志中报告错误。
 
 ## 命令与权限
 
@@ -80,13 +87,15 @@ schedule:
 
 | 命令 | 作用 |
 | --- | --- |
-| `!!curfew` / `!!curfew status` | 显示调度、服务器和临时解除状态 |
-| `!!curfew help` | 显示插件命令帮助 |
-| `!!curfew pardon <分钟>` | 临时解除宵禁；需要时立即启动服务器 |
-| `!!curfew pardon cancel` | 取消临时解除；若正值宵禁，执行 10 秒倒计时后关服 |
-| `!!curfew enable` | 启用调度；若正值宵禁，执行 10 秒倒计时后关服 |
-| `!!curfew disable` | 禁用调度，并启动由 CurfewX 关闭的服务器 |
-| `!!curfew reload` | 验证并重载配置 |
+| `!!cfx` / `!!cfx status` | 显示调度、服务器和临时解除状态 |
+| `!!cfx help` | 显示插件命令帮助 |
+| `!!cfx pardon <分钟>` | 临时解除宵禁；需要时立即启动服务器 |
+| `!!cfx pardon cancel` | 取消临时解除；若正值宵禁，执行 10 秒倒计时后关服 |
+| `!!cfx enable` | 启用调度；若正值宵禁，执行 10 秒倒计时后关服 |
+| `!!cfx disable` | 禁用调度，并启动由 CurfewX 关闭的服务器 |
+| `!!cfx reload` | 验证并重载配置 |
+
+`!!curfew` 是完整命令别名，支持与 `!!cfx` 相同的所有子命令。
 
 `pardon` 的截止时间会持久化。如果解除到期时仍处于宵禁时段，服务器会关闭；如果原定宵禁已经结束，则服务器继续运行。
 

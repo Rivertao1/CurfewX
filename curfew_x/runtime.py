@@ -52,10 +52,10 @@ class CurfewRuntime:
             self._normalize_state(self._now())
             self._register_commands()
             self.server.register_help_message(
-                "!!curfew",
+                "!!cfx",
                 {
-                    "zh_cn": "管理服务器宵禁时间与临时解除",
-                    "en_us": "Manage server curfew schedules and temporary pardons",
+                    "zh_cn": "管理服务器宵禁时间与临时解除（完整别名：!!curfew）",
+                    "en_us": "Manage server curfews and pardons (full alias: !!curfew)",
                 },
                 permission=ADMIN_PERMISSION_LEVEL,
             )
@@ -132,6 +132,7 @@ class CurfewRuntime:
             default_config=copy.deepcopy(DEFAULT_CONFIG),
             in_data_folder=True,
             failure_policy="raise",
+            data_processor=_fill_missing_defaults,
         )
         if not isinstance(raw, Mapping):
             raise ConfigError("配置文件根节点必须是映射")
@@ -142,22 +143,23 @@ class CurfewRuntime:
         def failure() -> str:
             return "权限不足：需要 MCDR admin（等级 3）或更高权限"
 
-        root = (
-            Literal("!!curfew")
-            .requires(Requirements.has_permission(ADMIN_PERMISSION_LEVEL), failure)
-            .runs(self._command_status)
-        )
-        root.then(Literal("help").runs(self._command_help))
-        root.then(Literal("status").runs(self._command_status))
-        root.then(Literal("enable").runs(self._command_enable))
-        root.then(Literal("disable").runs(self._command_disable))
-        root.then(Literal("reload").runs(self._command_reload))
-        root.then(
-            Literal("pardon")
-            .then(Integer("minutes").at_min(1).runs(self._command_pardon))
-            .then(Literal("cancel").runs(self._command_pardon_cancel))
-        )
-        self.server.register_command(root)
+        for prefix in ("!!cfx", "!!curfew"):
+            root = (
+                Literal(prefix)
+                .requires(Requirements.has_permission(ADMIN_PERMISSION_LEVEL), failure)
+                .runs(self._command_status)
+            )
+            root.then(Literal("help").runs(self._command_help))
+            root.then(Literal("status").runs(self._command_status))
+            root.then(Literal("enable").runs(self._command_enable))
+            root.then(Literal("disable").runs(self._command_disable))
+            root.then(Literal("reload").runs(self._command_reload))
+            root.then(
+                Literal("pardon")
+                .then(Integer("minutes").at_min(1).runs(self._command_pardon))
+                .then(Literal("cancel").runs(self._command_pardon_cancel))
+            )
+            self.server.register_command(root)
 
     def _command_help(
         self, source: CommandSource, _context: dict[str, Any] | None = None
@@ -166,13 +168,14 @@ class CurfewRuntime:
             "\n".join(
                 (
                     "§6[CurfewX] 命令帮助",
-                    "§e!!curfew help§7 - 显示本帮助",
-                    "§e!!curfew status§7 - 查看宵禁、服务器和临时解除状态",
-                    "§e!!curfew pardon <分钟>§7 - 临时解除宵禁并按需启动服务器",
-                    "§e!!curfew pardon cancel§7 - 取消临时解除",
-                    "§e!!curfew enable§7 - 启用宵禁调度",
-                    "§e!!curfew disable§7 - 禁用调度并恢复插件关闭的服务器",
-                    "§e!!curfew reload§7 - 验证并重载配置文件",
+                    "§e!!cfx help§7 - 显示本帮助",
+                    "§e!!cfx status§7 - 查看宵禁、服务器和临时解除状态",
+                    "§e!!cfx pardon <分钟>§7 - 临时解除宵禁并按需启动服务器",
+                    "§e!!cfx pardon cancel§7 - 取消临时解除",
+                    "§e!!cfx enable§7 - 启用宵禁调度",
+                    "§e!!cfx disable§7 - 禁用调度并恢复插件关闭的服务器",
+                    "§e!!cfx reload§7 - 验证并重载配置文件",
+                    "§7完整命令别名：§e!!curfew",
                     "§7所有命令需要 MCDR admin（等级 3）或更高权限。",
                 )
             )
@@ -342,12 +345,12 @@ class CurfewRuntime:
             if not self.server.is_server_startup():
                 continue
             if threshold >= 60 and threshold % 60 == 0:
-                message = self.config.messages.render(
+                message = self.config.messages.render_countdown(
                     self.config.messages.minutes_remaining,
                     value=threshold // 60,
                 )
             else:
-                message = self.config.messages.render(
+                message = self.config.messages.render_countdown(
                     self.config.messages.seconds_remaining,
                     value=threshold,
                 )
@@ -368,7 +371,7 @@ class CurfewRuntime:
 
     def _retry_soft_shutdown(self, *, announce: bool) -> None:
         if announce and self.server.is_server_startup():
-            self.server.say(self.config.messages.render(self.config.messages.shutdown_now))
+            self.server.say(self.config.messages.render_shutdown())
         self.server.set_exit_after_stop_flag(False)
         if self.server.stop():
             self.server.logger.info("CurfewX 已发送软关闭命令")
@@ -494,4 +497,23 @@ def _deep_merge(defaults: Mapping[str, Any], values: Mapping[str, Any]) -> dict[
         else:
             result[key] = copy.deepcopy(value)
     return result
-    return result
+
+
+def _fill_missing_defaults(values: Any) -> bool:
+    """Add newly introduced nested settings without replacing user values."""
+    if not isinstance(values, dict):
+        return False
+
+    changed = False
+
+    def fill(target: dict[str, Any], defaults: Mapping[str, Any]) -> None:
+        nonlocal changed
+        for key, default in defaults.items():
+            if key not in target:
+                target[key] = copy.deepcopy(default)
+                changed = True
+            elif isinstance(target[key], dict) and isinstance(default, Mapping):
+                fill(target[key], default)
+
+    fill(values, DEFAULT_CONFIG)
+    return changed
