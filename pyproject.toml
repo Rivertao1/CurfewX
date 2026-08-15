@@ -1,6 +1,6 @@
 [project]
 name = "curfew-x"
-version = "0.1.1"
+version = "0.1.2"
 description = "A scheduled curfew plugin for MCDReforged"
 authors = [
     { name = "River_tao" },
